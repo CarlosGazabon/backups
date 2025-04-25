@@ -40,43 +40,12 @@ jobs:
 
       - name: Create EF Core migrations bundle
         run: |
-            dotnet new tool-manifest
-            dotnet tool install dotnet-ef --version 7.0.8
-            dotnet ef migrations bundle -v --self-contained
-            .\efbundle.exe -v --connection ${{ secrets.PETPLASTICS_PRODUCTION_SQL_CONNECTION }}
-            echo "Hello EF."
-
-      - name: Create EF Core migrations bundle
-        run: |
-          dotnet new tool-manifest
-          dotnet tool install dotnet-ef --version 7.0.8
-          dotnet ef migrations bundle -v --self-contained
-          .\efbundle.exe -v --connection ${{ secrets.CORE_PRODUCTION_SQL_CONNECTION }}
-          echo "Hello, EF Migrations Done."
-
-      - name: Create EF Core migrations bundle
-        run: |
-          dotnet new tool-manifest
-          dotnet tool install dotnet-ef --version 7.0.8
-          dotnet ef migrations bundle -v --self-contained          
-           .\efbundle.exe -v --connection ${{ secrets.CCPRB_PRODUCTION_SQL_CONNECTION }}
-          echo "Hello, EF Migrations Done."
-
-      - name: Create EF Core migrations bundle
-        run: |
           dotnet new tool-manifest
           dotnet tool install dotnet-ef --version 7.0.8
           dotnet ef migrations bundle -v --self-contained
           .\efbundle.exe -v --connection ${{ secrets.CARMELAFOODS_PRODUCTION_SQL_CONNECTION }}
           echo "Hello, EF Migrations Done."
 
-      - name: Create EF Core migrations bundle
-        run: |
-          dotnet new tool-manifest
-          dotnet tool install dotnet-ef --version 7.0.8
-          dotnet ef migrations bundle -v --self-contained          
-           .\efbundle.exe -v --connection ${{ secrets.BBC_PRODUCTION_SQL_CONNECTION }}
-          echo "Hello, EF Migrations Done."
 
 
   # Job de Deploy para todos los Tenants
@@ -92,22 +61,6 @@ jobs:
 
       # Step de Deploy para cada Tenant usando 
 
-      - name: Deploy CORE API
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: inventio2-api  # Nombre de la API CORE
-          slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_FF6B0BACD4664DC59B2F7C614F9B6EDB }}
-          package: .
-
-      - name: Deploy BBC API
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: inventio2-bbc  # Nombre de la API BBC
-          slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_8F4C7532ACC94847878E93C4C160AE98 }}
-          package: .
-
       - name: Deploy CARMELAFOODS API
         uses: azure/webapps-deploy@v2
         with:
@@ -116,118 +69,3 @@ jobs:
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_9FE45F881B694CD4B2B07F105DAD4319 }}
           package: .
 
-      - name: Deploy CCPRB API
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: inventio2-ccprb  # Nombre de la API CCPRB
-          slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_C56728D14A334CD0B1D1279E2965ECBC }}
-          package: .
-
-      - name: Deploy PETPLASTICS API
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: inventio2-pet-api  # Nombre de la API PETPLASTICS
-          slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_7603A4D057A44CFA8C8CFFD61FD58E43 }}
-          package: .
-
-
-  release:
-    runs-on: ubuntu-latest
-    needs: deploy_all_tenants
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 3
-          ref: main
-
-      - name: Obtener el número del último PR mergeado
-        id: get_pr_number
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          pr_number=$(gh pr list --search "is:merged" --json number,mergeCommit --jq '.[] | select(.mergeCommit.oid=="'${GITHUB_SHA}'") | .number')
-          if [ -z "$pr_number" ]; then
-            echo "No se encontró un PR para el commit actual."
-            exit 1
-          fi
-          echo "Último PR mergeado: $pr_number"
-          echo "::set-output name=PR_NUMBER::$pr_number"
-          echo "Get PR Title"
-          pr_title=$(gh pr view $pr_number --json title --jq '.title')
-          echo "PR Title: $pr_title"
-          echo "::set-output name=TITLE::$pr_title"
-
-      - name: Obtener el label del PR mergeado
-        id: get_label
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          label=$(gh pr view ${{ steps.get_pr_number.outputs.PR_NUMBER }} --json labels --jq '.labels[0].name')
-          echo "Label encontrado: $label"
-          echo "::set-output name=COMMIT_TYPE::$label"
-
-      - name: Get latest tag
-        id: get_tag
-        run: |
-          git fetch --tags
-          latest_tag=$(git tag -l "[0-9]*.[0-9]*.[0-9]*" | sort -V | tail -n 1 || echo "0.0.0")
-          echo "Latest tag: $latest_tag"
-          echo "::set-output name=LATEST_TAG::$latest_tag"
-
-      - name: Set bump type based on label
-        id: bump_type
-        run: |
-          bump_type="${{ steps.get_label.outputs.COMMIT_TYPE }}"
-          if [[ "$bump_type" == "FIX" ]]; then
-            echo "::set-output name=BUMP_TYPE::patch"
-          elif [[ "$bump_type" == "FEAT" ]]; then
-            echo "::set-output name=BUMP_TYPE::minor"
-          elif [[ "$bump_type" == "BREAKING CHANGE" ]]; then
-            echo "::set-output name=BUMP_TYPE::major"
-          fi
-
-      - name: Bump version and create new tag
-        id: bump_tag
-        run: |
-          IFS='.' read -r -a version_parts <<< "${{ steps.get_tag.outputs.LATEST_TAG }}"
-          major="${version_parts[0]}"
-          minor="${version_parts[1]}"
-          patch="${version_parts[2]}"
-          if [[ "${{ steps.bump_type.outputs.BUMP_TYPE }}" == "major" ]]; then
-            new_major=$((major + 1))
-            new_minor=0
-            new_patch=0
-          elif [[ "${{ steps.bump_type.outputs.BUMP_TYPE }}" == "minor" ]]; then
-            new_major=$major
-            new_minor=$((minor + 1))
-            new_patch=0
-          else
-            new_major=$major
-            new_minor=$minor
-            new_patch=$((patch + 1))
-          fi
-          new_tag="$new_major.$new_minor.$new_patch"
-          echo "New tag: $new_tag"
-          echo "::set-output name=NEW_TAG::$new_tag"
-
-          git config --local user.email "carlos.gazabon@ars-combinatoria.com"
-          git config --local user.name "CarlosGazabon"
-          echo "{ \"version\": \"$new_tag\" }" > version.json
-          cat version.json
-          git add version.json
-          git commit -m "Update version.json to $new_tag"
-          git tag "$new_tag"
-          git push origin main
-          git push origin "$new_tag"
-
-      - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.bump_tag.outputs.NEW_TAG }}
-          release_name: "Release ${{ steps.bump_tag.outputs.NEW_TAG }}"
-          body: ${{ steps.get_pr_number.outputs.TITLE }}
