@@ -1,0 +1,33 @@
+{
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#258b4c",
+    "activityBar.background": "#258b4c",
+    "activityBar.foreground": "#e7e7e7",
+    "activityBar.inactiveForeground": "#e7e7e799",
+    "activityBarBadge.background": "#c9b3eb",
+    "activityBarBadge.foreground": "#15202b",
+    "commandCenter.border": "#e7e7e799",
+    "sash.hoverBorder": "#258b4c",
+    "statusBar.background": "#1a6336",
+    "statusBar.foreground": "#e7e7e7",
+    "statusBarItem.hoverBackground": "#258b4c",
+    "statusBarItem.remoteBackground": "#1a6336",
+    "statusBarItem.remoteForeground": "#e7e7e7",
+    "titleBar.activeBackground": "#1a6336",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.inactiveBackground": "#1a633699",
+    "titleBar.inactiveForeground": "#e7e7e799"
+  },
+  "peacock.color": "#1a6336",
+  "appService.preDeployTask": "publish-release",
+  "appService.deploySubpath": "bin\\Release\\net7.0\\publish",
+  "appService.defaultWebAppToDeploy": "/subscriptions/cae9e3a0-d529-447a-b806-b588a771ed57/resourceGroups/INVENTIO2-DEMO/providers/Microsoft.Web/sites/inventio2",
+  "cSpell.words": [
+    "Gemba",
+    "Hasher",
+    "inventio",
+    "Lrepository",
+    "Newtonsoft",
+    "Subcat"
+  ]
+}
